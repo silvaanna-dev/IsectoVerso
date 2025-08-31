@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mundo dos Insetos 🐞</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+</head>
+<body>
+  <!-- ======= FORMULÁRIOS ======= -->
+  <div class="container" id="blocoForms">
+    <span class="borboleta b1">🦋</span>
+    <span class="borboleta b2">🦋</span>
+    <span class="borboleta b3">🦋</span>
+
+    <img src="static/images/logo.jpg" alt="Logo Mundo dos Insetos" style="display:block;margin:0 auto 12px;max-width:150px;border-radius:12px">
+    <h2 id="tituloForm">Cadastro Inicial 🐛</h2>
+
+    <!-- Cadastro -->
+    <form id="formCadastro" action="{{ url_for('home') }}" method="POST">
+      <label for="tipoUsuario">Tipo de usuário <span>*</span></label>
+      <select id="tipoUsuario" name="cargo" required>
+        <option value="">Selecione</option>
+        <option value="aluno">Aluno</option>
+        <option value="administrador">Administrador</option>
+      </select>
+
+      <div id="areaAdmin" style="display:none">
+        <label for="idAdmin">ID do professor (somente administradores) <span>*</span></label>
+        <input type="text" id="idAdmin" name="id_admin" placeholder="Ex: 215XXXXXXXXX (12 dígitos)" maxlength="12" />
+      </div>
+
+      <div id="areaAluno" style="display:none">
+        <label for="idAluno">ID do aluno <span>*</span></label>
+        <input type="text" id="idAluno" name="id_aluno" placeholder="Ex: 115XXXXXXXXX (12 dígitos)" maxlength="12" />
+      </div>
+
+      <label for="nome">Nome completo <span>*</span></label>
+      <input type="text" id="nome" name="nome" required />
+
+      <label for="email">E-mail <span>*</span></label>
+      <input type="email" id="email" name="email" required />
+
+      <label for="senha">Senha <span>*</span></label>
+      <div style="position:relative">
+        <input type="password" id="senha" name="senha" required style="padding-right:35px" />
+        <span class="formiguinha" onclick="toggleSenha('senha', this)">🐜</span>
+      </div>
+      <div class="senha-dica">A senha deve ter pelo menos 8 caracteres, incluindo letras e números.</div>
+
+      <label for="confirmarSenha">Confirmar Senha <span>*</span></label>
+      <div style="position:relative">
+        <input type="password" id="confirmarSenha" name="confirmar_senha" required style="padding-right:35px" />
+        <span class="formiguinha" onclick="toggleSenha('confirmarSenha', this)">🐜</span>
+      </div>
+
+      <button type="submit">Cadastrar 🐞</button>
+      <p class="message" id="msgCadastro"></p>
+    </form>
+
+    
+    <div class="login-link"><a href="{{ url_for('login') }}" id="toggleLink">Já tem uma conta? Faça login</a></div>
+  </div>
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>

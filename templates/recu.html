@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mundo dos Insetos 🐞</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+</head>
+<body>
+    <div class="container" id="blocoForms">
+      <span class="borboleta b1">🦋</span>
+      <span class="borboleta b2">🦋</span>
+      <span class="borboleta b3">🦋</span>
+
+      <img src="static/images/logo.jpg" alt="Logo Mundo dos Insetos" style="display:block;margin:0 auto 12px;max-width:150px;border-radius:12px">
+
+<!-- Recuperação -->
+      <form id="formRecuperar">
+        <label for="recEmail">Digite seu e-mail cadastrado <span>*</span></label>
+        <input type="email" id="recEmail" required />
+        <button type="button" onclick="verificarRecEmail()">Verificar E-mail</button>
+
+        <div id="novaSenhaBox" style="display:none">
+          <label for="novaSenha">Nova Senha <span>*</span></label>
+          <input type="password" id="novaSenha" />
+          <label for="confNovaSenha">Confirmar Nova Senha <span>*</span></label>
+          <input type="password" id="confNovaSenha" />
+          <button type="button" onclick="atualizarSenha()">Atualizar Senha 🔐</button>
+        </div>
+
+        <p class="message" id="msgRecuperar"></p>
+        <div class="login-link"><a href="login" onclick="mostrarLogin()">Voltar ao login</a></div>
+      </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>
