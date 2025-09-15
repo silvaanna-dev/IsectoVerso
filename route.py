@@ -258,27 +258,37 @@ def api_comentario():
         return jsonify({'success': False, 'message': str(e)}), 500
 
 # API para listar comentários pendentes - Versão Corrigida
+# API para listar comentários pendentes - VERSÃO CORRIGIDA
 @app.route('/api/comentarios_pendentes')
 def api_comentarios_pendentes():
     try:
+        print("=== ACESSANDO API COMENTÁRIOS PENDENTES ===")
         
         # Verificar autenticação
         if 'usuario_id' not in session:
+            print("Usuário não autenticado")
             return jsonify({'success': False, 'message': 'Não autorizado'}), 401
         
         # Verificar se é administrador
         user = Usuario.query.get(session['usuario_id'])
         if not user:
+            print("Usuário não encontrado")
             return jsonify({'success': False, 'message': 'Usuário não encontrado'}), 404
         
         if user.cargo != 'administrador':
+            print(f"Acesso negado - Cargo: {user.cargo}")
             return jsonify({'success': False, 'message': 'Acesso negado'}), 403
         
-        # Buscar comentários pendentes
-        comentarios = Comentario.query.filter_by(status='pendente').all()
+        # Buscar comentários pendentes - CORREÇÃO AQUI
+        comentarios = Comentario.query.filter(
+            (Comentario.status == 'pendente') | (Comentario.status.is_(None))
+        ).all()
+        
+        print(f"Encontrados {len(comentarios)} comentários pendentes")
         
         resultado = []
         for comentario in comentarios:
+            print(f"Processando comentário ID: {comentario.id}")
             
             # Obter nome do autor
             autor_nome = comentario.autor.nome if comentario.autor else 'Usuário Desconhecido'
@@ -288,23 +298,40 @@ def api_comentarios_pendentes():
             if comentario.imagem_id:
                 imagem = Imagem.query.get(comentario.imagem_id)
                 imagem_nome = imagem.nome if imagem else 'Imagem não encontrada'
+            elif comentario.inseto_id:
+                inseto = Inseto.query.get(comentario.inseto_id)
+                imagem_nome = inseto.nome if inseto else 'Inseto não encontrado'
+            
+            # Garantir que o ID seja string serializável
+            comentario_id = str(comentario.id)
             
             resultado.append({
-                'id': str(comentario.id),  # Garantir que é string
+                'id': comentario_id,
                 'texto': comentario.texto,
                 'data': comentario.criado_em.strftime('%d/%m/%Y %H:%M'),
                 'usuario': autor_nome,
-                'imagem_nome': imagem_nome
+                'imagem_nome': imagem_nome,
+                'resposta': comentario.resposta,
+                'data_resposta': comentario.resposta_criada_em.strftime('%d/%m/%Y %H:%M') if comentario.resposta_criada_em else None
             })
+        
+        # Estatísticas
+        total = Comentario.query.count()
+        pendentes = Comentario.query.filter(
+            (Comentario.status == 'pendente') | (Comentario.status.is_(None))
+        ).count()
+        respondidos = Comentario.query.filter_by(status='respondido').count()
         
         return jsonify({
             'success': True, 
             'comentarios': resultado,
-            'total': len(resultado)
+            'total': total,
+            'pendentes': pendentes,
+            'respondidos': respondidos
         })
         
     except Exception as e:
-        print(f"ERRO na API: {str(e)}")
+        print(f"ERRO na API comentarios_pendentes: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Erro interno: {str(e)}'}), 500
@@ -354,7 +381,172 @@ def api_moderar_comentario(comentario_id):
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Erro interno: {str(e)}'}), 500
+
+# API para listar comentários do usuário logado
+@app.route('/api/meus_comentarios')
+def api_meus_comentarios():
+    try:
+        if 'usuario_id' not in session:
+            return jsonify({'success': False, 'message': 'Não autorizado'}), 401
+        
+        usuario_id = session['usuario_id']
+        comentarios = Comentario.query.filter_by(usuario_id=usuario_id).order_by(Comentario.criado_em.desc()).all()
+        
+        resultado = []
+        for comentario in comentarios:
+            imagem_nome = 'Nenhuma imagem associada'
+            if comentario.imagem_id:
+                imagem = Imagem.query.get(comentario.imagem_id)
+                imagem_nome = imagem.nome if imagem else 'Imagem não encontrada'
+            
+            resultado.append({
+                'id': comentario.id,
+                'texto': comentario.texto,
+                'status': comentario.status,
+                'data_envio': comentario.criado_em.strftime('%d/%m/%Y %H:%M'),
+                'data_resposta': comentario.resposta_criada_em.strftime('%d/%m/%Y %H:%M') if comentario.resposta_criada_em else None,
+                'imagem_nome': imagem_nome,
+                'resposta': comentario.resposta
+            })
+        
+        return jsonify({'success': True, 'comentarios': resultado})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+# API para responder comentário
+@app.route('/api/responder_comentario/<comentario_id>', methods=['POST'])
+def api_responder_comentario(comentario_id):
+    try:
+        if 'usuario_id' not in session:
+            return jsonify({'success': False, 'message': 'Não autorizado'}), 401
+        
+        # Verificar se é administrador
+        user = Usuario.query.get(session['usuario_id'])
+        if not user or user.cargo != 'administrador':
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        
+        data = request.get_json()
+        resposta = data.get('resposta')
+        
+        if not resposta:
+            return jsonify({'success': False, 'message': 'Resposta não fornecida'}), 400
+        
+        comentario = Comentario.query.get(comentario_id)
+        if not comentario:
+            return jsonify({'success': False, 'message': 'Comentário não encontrado'}), 404
+        
+        # Atualizar comentário com resposta
+        comentario.resposta = resposta
+        comentario.resposta_criada_em = datetime.utcnow()
+        comentario.administrador_id = user.id
+        comentario.status = 'respondido'  # Atualizar status
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True, 
+            'message': 'Resposta enviada com sucesso',
+            'data_resposta': comentario.resposta_criada_em.strftime('%d/%m/%Y %H:%M')
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
     
+# API para listar todos os comentários (apenas administradores)
+@app.route('/api/todos_comentarios')
+def api_todos_comentarios():
+    try:
+        if 'usuario_id' not in session:
+            return jsonify({'success': False, 'message': 'Não autorizado'}), 401
+        
+        # Verificar se é administrador
+        user = Usuario.query.get(session['usuario_id'])
+        if not user or user.cargo != 'administrador':
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        
+        comentarios = Comentario.query.order_by(Comentario.criado_em.desc()).all()
+        
+        resultado = []
+        for comentario in comentarios:
+            # Informações do autor
+            autor = Usuario.query.get(comentario.usuario_id)
+            autor_nome = autor.nome if autor else 'Usuário não encontrado'
+            
+            # Informações da imagem
+            imagem_nome = 'Nenhuma imagem associada'
+            if comentario.imagem_id:
+                imagem = Imagem.query.get(comentario.imagem_id)
+                imagem_nome = imagem.nome if imagem else 'Imagem não encontrada'
+            
+            # Informações do inseto
+            inseto_nome = 'Nenhum inseto associado'
+            if comentario.inseto_id:
+                inseto = Inseto.query.get(comentario.inseto_id)
+                inseto_nome = inseto.nome if inseto else 'Inseto não encontrado'
+            
+            resultado.append({
+                'id': comentario.id,
+                'texto': comentario.texto,
+                'status': comentario.status,
+                'autor_nome': autor_nome,
+                'autor_email': autor.email if autor else '',
+                'data_envio': comentario.criado_em.strftime('%d/%m/%Y %H:%M'),
+                'data_resposta': comentario.resposta_criada_em.strftime('%d/%m/%Y %H:%M') if comentario.resposta_criada_em else None,
+                'imagem_nome': imagem_nome,
+                'inseto_nome': inseto_nome,
+                'resposta': comentario.resposta
+            })
+        
+        return jsonify({'success': True, 'comentarios': resultado})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+    
+# API para excluir comentário
+@app.route('/api/excluir_comentario/<comentario_id>', methods=['DELETE'])
+def api_excluir_comentario(comentario_id):
+    try:
+        if 'usuario_id' not in session:
+            return jsonify({'success': False, 'message': 'Não autorizado'}), 401
+        
+        comentario = Comentario.query.get(comentario_id)
+        if not comentario:
+            return jsonify({'success': False, 'message': 'Comentário não encontrado'}), 404
+        
+        # Verificar se é o autor ou administrador
+        user = Usuario.query.get(session['usuario_id'])
+        if comentario.usuario_id != user.id and user.cargo != 'administrador':
+            return jsonify({'success': False, 'message': 'Acesso negado'}), 403
+        
+        db.session.delete(comentario)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Comentário excluído com sucesso'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500  
+
+# API para verificar se usuário é administrador
+@app.route('/api/verificar_admin')
+def api_verificar_admin():
+    try:
+        if 'usuario_id' not in session:
+            return jsonify({'is_admin': False})
+        
+        user = Usuario.query.get(session['usuario_id'])
+        if user and user.cargo == 'administrador':
+            return jsonify({'is_admin': True})
+        else:
+            return jsonify({'is_admin': False})
+            
+    except Exception as e:
+        return jsonify({'is_admin': False})
+
+
+
 #Rota misc  
 
 @app.route("/logout")

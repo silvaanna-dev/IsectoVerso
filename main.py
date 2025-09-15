@@ -2,7 +2,6 @@ from flask import Flask
 from db import db
 from models import Usuario, Inseto, Comentario, Coleta, Descricao, Imagem
 
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'X149350491TSK9019320X'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 102
