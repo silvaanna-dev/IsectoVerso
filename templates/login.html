@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <title>Mundo dos Insetos 🐞</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+</head>
+<body>
+
+    <div class="container" id="blocoForms">
+      <span class="borboleta b1">🦋</span>
+      <span class="borboleta b2">🦋</span>
+      <span class="borboleta b3">🦋</span>
+
+      <img src="{{ url_for('static', filename='imagem/logo.jpg') }}" alt="Logo Mundo dos Insetos" style="display:block;margin:0 auto 12px;max-width:150px;border-radius:12px">
+
+    <!-- Login -->
+
+      <form id="formLogin" method="POST" action="{{ url_for('login') }}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <label for="loginEmail">E-mail <span>*</span></label>
+        <input type="email" id="loginEmail" name="email" required />
+
+        <label for="loginSenha">Senha <span>*</span></label>
+        <div style="position:relative">
+          <input type="password" id="loginSenha" name="senha" required style="padding-right:35px" />
+          <span class="formiguinha" onclick="toggleSenha('loginSenha', this)">🐜</span>
+        </div>
+
+        <button type="submit">Entrar 🐝</button>
+        <p class="message" id="msgLogin"></p>
+        <div class="login-link"><a href="{{ url_for('home') }}">Registrar-se</a></div>
+        <div class="login-link"><a href="{{ url_for('esq_senha') }}">Esqueci minha senha</a></div>
+      </form>
+
+    </div>
+
+    <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+
+</body>
+</html>

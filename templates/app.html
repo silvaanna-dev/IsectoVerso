@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mundo dos Insetos 🐞</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles/style.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <!-- ======= APP INTERNO ======= -->
+  <div id="paginaApp" class="mostrar">
+    <!-- Sidebar -->
+    {% if users.cargo == "administrador" %}
+      <div class="sidebar">
+        <h2>Menu 🐞</h2>
+        <a href="#" onclick="abrir('inicio')">🏠 Início</a>
+        <a href="#" onclick="abrir('descricoes')">📄 Adicionar descrição</a>
+        <a href="#" onclick="abrir('imagem')">🐜 Adiciona insetos</a>
+        <a href="#" onclick="abrir('dados')">📊 Dados da coleta</a>
+        <a href="#" onclick="abrir('catalogo')">🗂 Catálogo de insetos</a>
+        <a href="#" onclick="abrir('moderar')">🛡 Moderação</a>
+        <a href="{{ url_for('logout') }}" onclick="fazerLogout()">🚪 Sair</a>
+      </div>
+    {% else %}
+      <div class="sidebar">
+        <h2>Menu 🐞</h2>
+        <a href="#" onclick="abrir('inicio')">🏠 Início</a>
+        <a href="#" onclick="abrir('descricoes')">📄 Adicionar descrição</a>
+        <a href="#" onclick="abrir('imagem')">🐜 Adicionar insetos</a>
+        <a href="#" onclick="abrir('dados')">📊 Dados da coleta</a>
+        <a href="#" onclick="abrir('catalogo')">🗂 Catálogo de insetos</a>
+        <a href="#" onclick="abrir('comentario')">💬 Meus Comentários</a>
+        <a href="{{ url_for('logout') }}" onclick="fazerLogout()">🚪 Sair</a>
+      </div>
+    {% endif %}
+
+    <!-- Conteúdo -->
+    <div class="conteudo">
+      <section id="inicio" class="ativo">
+        <h1 id="boasVindas">🎉 Bem-vindo(a) {{users.nome}}!</h1>
+        <p class="badge" id="perfilBadge">Perfil: {{users.cargo}}</p>
+        <ul>
+          <li>🐜 Formigas conseguem carregar até 50x seu peso.</li>
+          <li>🦋 Borboletas "provam" com os pés!</li>
+          <li>🐞 Joaninhas ajudam no controle natural de pragas.</li>
+          <li>🕷 Aranhas são predadoras importantes.</li>
+          <li>🐝 Abelhas são essenciais para a polinização.</li>
+        </ul>
+      </section>
+
+        <!-- Seção para Descrições de Insetos -->
+     <section id="descricoes" class="descricoes-section">
+        <h2>📖 Descrições de Insetos</h2>
+        <div class="linha"></div>
+        
+        <!-- Botão para adicionar descrição (apenas admin) -->
+        <div id="adminControls" style="display: none;">
+            <button class="btn-adicionar" onclick="abrirModalDescricao()">
+                <i class="fas fa-plus"></i> Adicionar Descrição
+            </button>
+        </div>
+        
+        <!-- Filtros e busca -->
+        <div class="filtros-descricoes">
+            <input type="text" id="buscarDescricao" placeholder="🔍 Buscar descrições..." onkeyup="filtrarDescricoes()">
+            <select id="filtroInseto" onchange="filtrarDescricoes()">
+                <option value="">Todos os insetos</option>
+            </select>
+        </div>
+        
+        <!-- Lista de descrições -->
+        <div id="listaDescricoes" class="lista-descricoes">
+            <p>Carregando descrições...</p>
+        </div>
+    </section>
+
+    <!-- Modal para adicionar/editar descrição -->
+    <div id="modalDescricao" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModalDescricao()">&times;</span>
+            <h3 id="tituloModal">Adicionar Descrição</h3>
+            
+            <form id="formDescricao">
+                <input type="hidden" id="descricaoId">
+                
+                <div class="form-group">
+                    <label for="insetoSelect">Inseto:</label>
+                    <select id="insetoSelect" required>
+                        <option value="">Selecione um inseto</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tituloDescricao">Título:</label>
+                    <input type="text" id="tituloDescricao" required maxlength="200">
+                </div>
+                
+                <div class="form-group">
+                    <label for="descricaoCompleta">Descrição Completa:</label>
+                    <textarea id="descricaoCompleta" rows="4" required></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="caracteristicas">Características Principais:</label>
+                    <textarea id="caracteristicas" rows="3" placeholder="Ex: Tamanho, cor, formato..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="habitat">Habitat Natural:</label>
+                    <textarea id="habitat" rows="3" placeholder="Onde vivem, condições ideais..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="curiosidades">Curiosidades:</label>
+                    <textarea id="curiosidades" rows="3" placeholder="Fatos interessantes..."></textarea>
+                </div>
+                
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancelar" onclick="fecharModalDescricao()">Cancelar</button>
+                    <button type="submit" class="btn-salvar">Salvar Descrição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+      
+      <section id="imagem">
+        <h2>🖼 Adicionar Insetos</h2>
+        
+        <!-- Painel de administrador para adicionar imagens -->
+        {% if users.cargo == "administrador" %}
+        <div id="painelAdminImagem">
+          <p class="badge">Acesso de administrador</p>
+          <form id="formImagem" action="{{ url_for('adicionar_imagem') }}" method="POST" enctype="multipart/form-data">
+            <input type="text" id="nomeImagem" name="nomeImagem" placeholder="Nome da imagem" required>
+            <input type="file" id="arquivoImagem" name="arquivoImagem" accept="image/*" onchange="previewImage(event)" required>
+            <div id="previewContainer" class="preview-container" style="display:none">
+              <h3>Preview da Imagem</h3>
+              <img id="previewImagem" src="" alt="Preview">
+            </div>
+            <button type="submit">Enviar imagem</button>
+          </form>
+          <p id="msgImagem" class="message">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  {% if category == 'imagem' %}
+                    <span class="{{ 'success' if message.endswith('sucesso!') else 'error' }}">
+                      {{ message }}
+                    </span>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+          </p>
+        </div>
+        {% else %}
+        <div id="painelAlunoImagem">
+          <p class="badge">Você pode apenas visualizar as imagens</p>
+        </div>
+        {% endif %}
+        
+        <div class="linha"></div>
+        
+        <!-- Galeria de imagens para todos os usuários -->
+        <h3>Galeria de Insetos</h3>
+        <div id="galeriaImagens" class="galeria">
+          {% for imagem in imagens %}
+            <div class="item-galeria">
+              <img src="data:image/jpeg;base64,{{ imagem.data_url }}" alt="{{ imagem.nome }}">
+              <p>{{ imagem.nome }}</p>
+              <div class="galeria-acoes">
+                <small>Enviada em: {{ imagem.criado_em.strftime('%d/%m/%Y') }}</small>
+                <button class="btn-comentario" onclick="abrirComentarios('{{ imagem.id }}')" title="Comentar">
+                  <i class="fas fa-comment icone-comentario"></i>
+                </button>
+              </div>
+            </div>
+          {% else %}
+            <p>Nenhuma imagem.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section id="dados">
+        <h2>📊 Dados da coleta</h2>
+        <div class="grid grid-2">
+          <input type="text" id="localColeta" placeholder="Local da coleta">
+          <input type="date" id="dataColeta">
+        </div>
+        <textarea id="obsColeta" placeholder="Observações..." rows="6"></textarea>
+        <button type="button" onclick="salvarDadosColeta()">Salvar dados</button>
+        <p id="msgDados" class="message"></p>
+      </section>
+
+      <section id="catalogo">
+        <div class="grid grid-2">
+          <div>
+            <h2>🗂 Catálogo de insetos</h2>
+            <div class="linha"></div>
+            <div id="listaInsetos"></div>
+          </div>
+          {% if users.cargo == "administrador" %}
+            <div id="painelAdmin" style="display:block">
+              <h2>👩‍🏫 Cadastrar inseto (Admin)</h2>
+              <label>Nome do inseto <span>*</span></label>
+              <input id="cadNomeInseto" type="text" placeholder="Ex: Formiga-cortadeira">
+              <label>Descrição <span>*</span></label>
+              <textarea id="cadDescInseto" rows="6" placeholder="Digite uma descrição detalhada..."></textarea>
+              <label>Imagem</label>
+              <input id="cadImgInseto" type="file" accept="image/*">
+              <button onclick="adminAdicionarInseto()">Adicionar ao catálogo</button>
+              <p id="msgAdminInseto" class="message"></p>
+            </div>
+          {% else %}
+            <div id="painelAdmin" style="display:none">
+              <h2>👩‍🏫 Cadastrar inseto (Admin)</h2>
+              <p class="badge">Apenas administradores podem cadastrar insetos</p>
+            </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="comentario">
+        <h2>💬 Meus Comentários</h2>
+        
+        <div class="filtros">
+            <button class="btn-filtro ativo" onclick="filtrarComentarios('todos')">Todos</button>
+            <button class="btn-filtro" onclick="filtrarComentarios('pendentes')">Pendentes</button>
+            <button class="btn-filtro" onclick="filtrarComentarios('respondidos')">Respondidos</button>
+        </div>
+        
+        <div class="linha"></div>
+        
+        <div id="meusComentarios">
+            <p>Carregando seus comentários...</p>
+        </div>
+    </section>
+
+      <!-- Popup de Comentários -->
+      <div id="popupComentario" class="popup">
+        <div class="popup-conteudo">
+          <div class="popup-cabecalho">
+            <h3>Adicionar Comentário</h3>
+            <span class="fechar-popup" onclick="fecharPopupComentario()">&times;</span>
+          </div>
+          <div class="popup-corpo">
+            <div id="imagemPopup">
+              <p>Carregando imagem...</p>
+            </div>
+            <textarea id="textoComentario" placeholder="Digite seu comentário..." rows="4"></textarea>
+          </div>
+          <div class="popup-rodape">
+            <button onclick="fecharPopupComentario()">Cancelar</button>
+            <button onclick="enviarComentario()" class="btn-primario">Enviar Comentário</button>
+          </div>
+        </div>
+      </div>
+
+      <section id="moderar">
+        <h2>🛡 Moderação de Comentários</h2>
+        <p class="badge">Somente administradores</p>
+        <div class="linha"></div>
+        
+        <div class="estatisticas">
+            <div class="estatistica-item">
+                <span class="numero" id="totalComentarios">0</span>
+                <span class="label">Total</span>
+            </div>
+            <div class="estatistica-item">
+                <span class="numero" id="pendentesComentarios">0</span>
+                <span class="label">Pendentes</span>
+            </div>
+            <div class="estatistica-item">
+                <span class="numero" id="respondidosComentarios">0</span>
+                <span class="label">Respondidos</span>
+            </div>
+        </div>
+        
+        <div class="linha"></div>
+        
+        <h3>Comentários para Moderar</h3>
+        <div id="listaPendentes">
+            <p>Carregando comentários...</p>
+        </div>
+    </section>
+      
+    </div>
+    
+  </div>
+   <script src="{{ url_for('static', filename='scripts/app.js') }}"></script>
+</body>
+</html>
